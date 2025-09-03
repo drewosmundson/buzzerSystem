@@ -80,7 +80,7 @@ io.on('connection', (socket) => {
       hostId: socket.id,
       participants: {},
       buzzerState: 'standby', // 'standby', 'countdown', 'active', 'finished'
-      buzzerPresses: [],
+      buzzerPresses: {},
       countdownEndTime: null,
       rounds: [], // Store completed rounds
       currentRound: 1, // Track current round number
