@@ -25,15 +25,44 @@ const rooms = {};
 io.on('connection', (socket) => {
 
     // from hosts
-    socket.on('hostCreateRoomRequest', createRoom(socket, rooms));
+    socket.on('indexCreateRoomRequest', createRoom(rooms));
 
-    socket.on('hostStartsCountdown', startCountdown(socket, rooms));
-
-    socket.on('hostStopsCountdown', stopCountdown(socket, rooms));
-
-    socket.on('hostLeaveRoomRequest', hostLeaveRoom(socket, rooms));
+    socket.on('indexJoinRoomRequest', joinRoom(rooms));
 
     function createRoom(rooms) {
+
+    }
+
+    function createRoom(rooms) {
+
+    }
+
+    socket.on('hostStartsCountdown', startCountdown(rooms));
+
+    socket.on('hostStopsCountdown', stopCountdown(rooms));
+
+    socket.on('hostLeaveRoomRequest', hostLeaveRoom(rooms));
+
+
+    function startCountdown(rooms) {
+
+    }
+
+    function stopCountdown(rooms) {
+
+    }
+
+    function hostLeaveRoom(rooms) {
+
+    }
+
+    socket.on('playerBuzz', buzz(rooms))
+
+    socket.on('playerleaveRoomRequest', leaveRoom(rooms));
+
+    socket.on('playerRejoinRoomRequest', rejoinRoom(rooms))
+
+    function buzz(rooms) {
 
     }
 
@@ -41,37 +70,10 @@ io.on('connection', (socket) => {
 
     }
 
-    function stopCountdown(socket, rooms) {
+    function stopCountdown(rooms) {
 
     }
 
-    function hostLeaveRoom(socket, rooms) {
-
-    }
-
-    socket.on('playerJoinRoomRequest', joinRoom(rooms));
-
-    socket.on('playerBuzz')
-
-    socket.on('playerleaveRoomRequest', leaveRoom(rooms));
-
-    socket.on('playerRejoinRoomRequest')
-
-    function createRoom(rooms) {
-
-    }
-
-    function startCountdown(socket, rooms) {
-
-    }
-
-    function stopCountdown(socket, rooms) {
-
-    }
-
-    function hostLeaveRoom(socket, rooms) {
-
-    }
 })
 
 // start server

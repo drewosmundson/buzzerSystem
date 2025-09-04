@@ -1,51 +1,126 @@
 /* Modern CSS for Buzzer System */
 :root {
-    --primary-color: #3a7bd5;
-    --primary-gradient: linear-gradient(135deg, #3a7bd5, #2d56b5);
-    --secondary-color: #3d4958;
-    --accent-color: #e9ecf0;
-    --text-color: #444343;
-    --light-text: #f8f9fa;
-    --shadow: 1 7px 10px rgba(20, 19, 19, 0.1);
-    --card-shadow: 1 15px 25px rgba(32, 30, 30, 0.05);
-    --border-radius: 12px;
-    --transition: all 0.4s ease;
-    --buzzer-inactive: #a0a0a0;
-    --buzzer-active: linear-gradient(135deg, #ff6b6b, #ee0979);
-    --buzzer-pressed: #707070;
-  }
-  
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  body {
-    background-color: var(--secondary-color);
-    color: var(--text-color);
-    line-height: 1.6;
-  }
+  --primary-color: #3a7bd5;
+  --primary-gradient: linear-gradient(135deg, #3a7bd5, #2d56b5);
+  --secondary-color: #3d4958;
+  --accent-color: #e9ecf0;
+  --text-color: #444343;
+  --light-text: #f8f9fa;
+  --card-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  --border-radius: 12px;
+  --transition: all 0.3s ease;
+}
 
-  h1 {
-    text-align: center;
-    font-weight: 700;
-    font-size: 2.5rem;
-    color: var(--accent-color);
-    text-shadow: var(--shadow)
-  }
-  .section {
-    background: rgb(231, 230, 236);
-    padding: 30px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--card-shadow);
-    margin-bottom: 20px;
-  }
-  
-  .container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 20px;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  line-height: 1.6;
+  padding: 2rem;
+}
+
+h1 {
+  text-align: center;
+  font-size: 3rem;
+  color: var(--accent-color);
+  margin-top: 2rem;
+  margin-bottom: 3rem;
+}
+
+h3 {
+  font-size: 1.4rem;
+  color: var(--text-color);
+  margin-top: 2rem;
+  margin-bottom: 3rem;
+}
+.section {
+  background: #172c63;
+  margin: 4rem auto;
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  max-width: 1200px;
+  width: 80%;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap; /* allows stacking on smaller screens */
+}
+button {
+  background: var(--primary-gradient);
+  color: rgb(243, 245, 247);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+  letter-spacing: 0.5px;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card {
+  flex: 1 1 300px;
+  background: rgb(255, 243, 237);
+  padding: 2rem; /* smaller padding looks cleaner */
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+
+  display: flex;
+  flex-direction: column;  
+  align-items: center;           /* center horizontally */
+  justify-content: space-evenly; /* equal spacing vertically */
+  text-align: center;            /* center text inside */
+}
+
+.card button {
+  margin-top: 0;     /* no need for auto now */
+  align-self: center;
+}
+.input-group {
+  display: flex;
+  width: 100%;
+  gap: 10px; /* space between input and button */
+  margin-top: auto; /* push to bottom of card */
+}
+
+.input-group input {
+  flex: 1; /* input takes remaining space */
+  margin: 0; /* remove old bottom margin */
+}
+
+.input-group button {
+  flex-shrink: 0; /* button stays its natural width */
+}
+
+input {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.2);
+}
   
