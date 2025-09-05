@@ -7,14 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const createRoomButton = document.getElementById('createRoomButton');
   const joinRoomButton = document.getElementById('joinRoomButton')
 
-  // Host Screen
-  const startCountdown = document.getElementById('startCountdown');
-  const stopCountdown = document.getElementById('stopCountdown');
-
-  // Player Screen
-  const playerBuzz = document.getElementById('playerBuzz');
-
-
   // state variables
   let socket = null;
   let hostInstance;
@@ -29,13 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Host
   createRoomButton?.addEventListener('click', () => {
     hostInstance = new Host(socket);
-    hostInstance.startGame();
   });
 
   // Players
   joinRoomButton?.addEventListener('click', () => {
     playerInstance = new Player(socket);
-    playerInstance.joinGame();
   });
 });
 

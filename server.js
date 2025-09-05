@@ -66,33 +66,32 @@ function createRoom(socket) {
 }
 
 function joinRoom(rooms) {
-  // TODO: implement
+ 
 }
 
 // host screen
 function hostStartCountdown(rooms) {
-  // TODO: implement
+  
 }
 
 function hostStopCountdown(rooms) {
-  // TODO: implement
+ 
 }
 
 function hostLeaveRoom(rooms) {
-  // TODO: implement
+  
 }
 
 // Player screen
 function playerBuzz(rooms) {
-  // TODO: implement
+  
 }
 
 function playerLeaveRoom(rooms) {
-  // TODO: implement
 }
 
 function playerRejoinRoom(rooms) {
-  // TODO: implement
+  
 }
 
 

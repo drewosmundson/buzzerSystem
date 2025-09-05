@@ -3,23 +3,24 @@ export class Host {
   constructor(socket) {
     this.socket = socket;
     this.timerLength = document.getElementById('countdownTime');
-    this.setUpDocumentListeners();
-    this.setUpServerListeners(socket);
-  }
-
-  // messages to the server
-  setUpDocumentListeners(){}
-
-  startGame() {
+    this.hostStartCountdownButton = document.getElementById('hostStartCountdownButton');
+    this.hostEndRoundButton = document.getElementById('hostEndRoundButton');
+    this.setUpDocumentEventListeners();
+    this.setUpServerListeners();
     this.socket.emit('hostCreateRoomRequest');
-
   }
+
+setUpDocumentEventListeners() {
+  this.startCountdownButton?.addEventListener('click', () => {this.startRound()});
+
+  this.endRoundButton?.addEventListener('click', () => {this.endRound()});
+}
 
   startRound() {
-
+    console.log("startCountdownButton");
   }
   endRound() {
-
+    console.log("endRoundButton");
   }
   resetGame() {
 
@@ -29,14 +30,21 @@ export class Host {
   }
 // received from the server
 
-  setUpServerListeners(socket) {
-    socket.on("roomCreated", (roomCode) => {
+  setUpServerListeners() {
+    this.socket.on("roomCreated", (roomCode) => {
       console.log("Room created with code:", roomCode);
     });
 
-    socket.on("playerJoined", (player) => {
+    this.socket.on("playerJoined", (player) => {
       console.log("Player joined:", player);
     });
   }
+  roomCreated() {}
+
+
+  playerJoined() {}
+
+
+
 
 }
