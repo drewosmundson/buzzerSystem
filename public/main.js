@@ -8,15 +8,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const joinRoomButton = document.getElementById('joinRoomButton')
 
   // Host Screen
-  const startCountdown = document.getElementById('createRoomButton');
-  const stopCountdown = document.getElementById('joinRoomButton');
+  const startCountdown = document.getElementById('startCountdown');
+  const stopCountdown = document.getElementById('stopCountdown');
 
   // Player Screen
-  const buzz = document.getElementById('joinRoomButton');
+  const playerBuzz = document.getElementById('playerBuzz');
+
 
   // state variables
   let socket = null;
   let currentScreen = 'mainMenu'; // Track current screen for navigation
+  let Host;
+  let Player;
 
   try {
     socket = io();
@@ -26,6 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Host
   createRoomButton?.addEventListener('click', () => {
+    console.log("testMEssage")
+    window.location.href = "./host.html"
     Host = new Host(socket);
     Host.startGame();
   });

@@ -13,7 +13,7 @@
       <!-- Left: Create Room -->
       <div class="card">
         <h3>For Teachers or Other Hosts</h3>
-        <a href="host.html" class="button" id="createRoomBtn">CREATE ROOM</a>
+        <button href="host.html" id="createRoomButton">CREATE ROOM</a>
       </div>
 
       <!-- Right: Join Room -->
@@ -21,12 +21,12 @@
         <h3>For Students or Other Players</h3>
         <div class="input-group">
           <input type="text" id="roomIdInput" placeholder="Code" required>
-          <a href="join.html" class="button" id="joinRoomBtn">CREATE ROOM</a>
+          <button href="join.html" id="joinRoomButton">JOIN ROOM</button>
         </div>
       </div>
     </div>
   </div>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="main.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>

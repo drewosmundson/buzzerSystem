@@ -1,11 +1,15 @@
+// server.js this is the entry point for this program
+// it handles init processes requests and sends data to the user
 
-// sever.js this is the entry point for this program
-// it handles init processes requests and sends data to the user 
+import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
+// __dirname replacement in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // create new instance of express
 const app = express();
@@ -16,70 +20,108 @@ const io = new Server(server);
 // Serve static files create communication between server and public folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// data struct to keep track of hosts each room to one host rooms can have many players
-// rooms also contain a list of all the players that have ever been in that room to perserve on
+
+const ROOMCODELENGTH = 4;
+const PORT = process.env.PORT || 3000;
+
+
+// data structure to keep track of hosts each room to one host rooms can have many players
+// lobbies also contain a list of all the players that have ever been in that room to preserve on
 // disconnect
 const rooms = {}; 
 
+// server helper functions
+function logCurrentHostAndParticipants(object){
+  console.log(object)
+}
+// notebly missing 6789 and several others to avoid meme "funny" numbers that would 
+// disrupt a classroom i.e. '6,7' and '69'
+function generateRoomCode() {
+  const roomCodeOptions = "12345ABCDEFWXYZ"
+  let roomCode = "";
+  for(let i = 0; i < ROOMCODELENGTH; i++){
+    let randomNumber = Math.floor(Math.random() * roomCodeOptions.length);
+    roomCode += roomCodeOptions[randomNumber];
+  }
+  return roomCode;
+}
+
+// socket io functions
+// socket.emit('event', data) reply only to the same client.
+// socket.to(roomId).emit('event', data) send to everyone in the room except the sender.
+// io.to(roomId).emit('event', data) send to all clients in a room, including the sender.
+// io.emit('event', data) broadcast to everyone connected.
+
+function createRoom(socket) {
+
+  console.log("here");
+  const roomCode = generateRoomCode();
+  // room state
+  rooms[roomCode] = {
+    hostSocketID: socket.id,
+    players: {},
+    roundHistory: {},
+    currentRound: 1,
+    countdownTime: 0,
+    cooutdownStarted: false,
+    buzzerActive: false,
+  }
+  // join socket to the room that all the participants will be apart of
+  socket.join(roomCode);
+  socket.emit('roomCreated', { roomCode })
+  logCurrentHostAndParticipants(roomCode);
+}
+
+function joinRoom(rooms) {
+  // TODO: implement
+}
+
+// host screen
+function hostStartCountdown(rooms) {
+  // TODO: implement
+}
+
+function hostStopCountdown(rooms) {
+  // TODO: implement
+}
+
+function hostLeaveRoom(rooms) {
+  // TODO: implement
+}
+
+// Player screen
+function playerBuzz(rooms) {
+  // TODO: implement
+}
+
+function playerLeaveRoom(rooms) {
+  // TODO: implement
+}
+
+function playerRejoinRoom(rooms) {
+  // TODO: implement
+}
+
+
 // server protocol
 io.on('connection', (socket) => {
+  console.log('socket ' + socket.id + ' is connected');
+  socket.on('indexCreateRoomRequest', () => createRoom(socket));
+  socket.on('indexJoinRoomRequest', (data) => joinRoom());
 
-    // from hosts
-    socket.on('indexCreateRoomRequest', createRoom(rooms));
+  // from hosts
+  socket.on('hostStartsCountdown', (data) => startCountdown());
+  socket.on('hostStopsCountdown', (data) => stopCountdown());
+  socket.on('hostLeaveRoomRequest', (data) => hostLeaveRoom());
 
-    socket.on('indexJoinRoomRequest', joinRoom(rooms));
+  // from players
+  socket.on('playerBuzz', (data) => playerBuzz());
+  socket.on('playerleaveRoomRequest', (data) => playerLeaveRoom());
+  socket.on('playerRejoinRoomRequest', (data) => rejoinRoom());
 
-    function createRoom(rooms) {
+});
 
-    }
-
-    function createRoom(rooms) {
-
-    }
-
-    socket.on('hostStartsCountdown', startCountdown(rooms));
-
-    socket.on('hostStopsCountdown', stopCountdown(rooms));
-
-    socket.on('hostLeaveRoomRequest', hostLeaveRoom(rooms));
-
-
-    function startCountdown(rooms) {
-
-    }
-
-    function stopCountdown(rooms) {
-
-    }
-
-    function hostLeaveRoom(rooms) {
-
-    }
-
-    socket.on('playerBuzz', buzz(rooms))
-
-    socket.on('playerleaveRoomRequest', leaveRoom(rooms));
-
-    socket.on('playerRejoinRoomRequest', rejoinRoom(rooms))
-
-    function buzz(rooms) {
-
-    }
-
-    function startCountdown(rooms) {
-
-    }
-
-    function stopCountdown(rooms) {
-
-    }
-
-})
-
-// start server
-const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-

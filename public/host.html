@@ -9,56 +9,36 @@
 <body>
   <div class="section">
     <h1>Online Buzzer</h1>  
-  <!-- Host Screen -->
-      <h2>Room Code: <span id="roomCode"></span></h2>
-
-      <div class="round-info">Round: <span id="currentRoundDisplay">1</span></div>
+    <h2>Room Code: <span id="roomCode"></span></h2>
+    <div class="round-info">Round: <span id="currentRoundDisplay">1</span></div>
       
-      <div class="control-panel">
-        <select id="countdownTime">
-          <option value="0">No countdown</option>
-          <option value="3">3 second countdown</option>
-          <option value="5">5 second countdown</option>
-          <option value="10">10 second countdown</option>
-        </select>
-        <button id="startCountdownBtn">Start Countdown</button>
+    <div class="control-panel">
+      <select id="countdownTime">
+        <option value="0">No countdown</option>
+        <option value="3">3 second countdown</option>
+        <option value="5">5 second countdown</option>
+        <option value="10">10 second countdown</option>
+      </select>
+        <button id="startCountdownBtn">Start Round</button>
         <button id="endRoundBtn" disabled>End Round</button>
+    </div>
+      
+    <div>
+      <h3>Participants:</h3>
+      <div id="participantsList"></div>
+    </div>
+      
+    <div id="winnerDisplay" class="winner hidden"></div>
+
+      <div id="currentRoundTab" class="tab-content active">
+        <h3>Last Round Results: <span id="">1</span></h3>
+        <ul id="buzzerResults"></ul>
       </div>
       
-      <div id="countdownDisplay" class="countdown-container hidden">
-        <div class="countdown">5</div>
-        <div>Get ready!</div>
-      </div>
-      
-      <div>
-        <h3>Participants:</h3>
-        <div id="participantsList"></div>
-      </div>
-      
-      <div id="winnerDisplay" class="winner hidden"></div>
-      
-      <div class="tab-container">
-        <div class="tab-buttons">
-          <button class="tab-button active" onclick="openTab(event, 'currentRoundTab')">Current Round</button>
-          <button class="tab-button" onclick="openTab(event, 'roundHistoryTab')">Round History</button>
-        </div>
-        
-        <div id="currentRoundTab" class="tab-content active">
-          <h3>Current Buzzer Results:</h3>
-          <ul id="buzzerResults"></ul>
-        </div>
-        
+      <div class="results-container">
         <div id="scoreboardTab" class="tab-content">
-          <h3>Participant Scores:</h3>
-          <table id="scoreboardTable" class="scoreboard">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Score</th>
-              </tr>
-            </thead>
-            <tbody id="scoreboardBody"></tbody>
-          </table>
+          <h3>Player Scores:</h3>
+          <div id="roundHistoryList" class="round-history"></div>
         </div>
         
         <div id="roundHistoryTab" class="tab-content">

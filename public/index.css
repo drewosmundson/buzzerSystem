@@ -55,6 +55,33 @@ h3 {
   gap: 2rem;
   flex-wrap: wrap; /* allows stacking on smaller screens */
 }
+
+.card {
+  flex: 1 1 300px;
+  background: rgb(255, 243, 237);
+  padding: 2rem; 
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  text-align: center;
+  padding-bottom: 4rem; 
+}
+
+.input-group {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.input-group input {
+  flex: 1;
+  margin: 0;
+}
+
 button {
   background: var(--primary-gradient);
   color: rgb(243, 245, 247);
@@ -66,46 +93,12 @@ button {
   font-weight: 500;
   transition: var(--transition);
   box-shadow: var(--shadow);
-  letter-spacing: 0.5px;
+  text-decoration: none;
 }
 
 button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.card {
-  flex: 1 1 300px;
-  background: rgb(255, 243, 237);
-  padding: 2rem; /* smaller padding looks cleaner */
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-
-  display: flex;
-  flex-direction: column;  
-  align-items: center;           /* center horizontally */
-  justify-content: space-evenly; /* equal spacing vertically */
-  text-align: center;            /* center text inside */
-}
-
-.card button {
-  margin-top: 0;     /* no need for auto now */
-  align-self: center;
-}
-.input-group {
-  display: flex;
-  width: 100%;
-  gap: 10px; /* space between input and button */
-  margin-top: auto; /* push to bottom of card */
-}
-
-.input-group input {
-  flex: 1; /* input takes remaining space */
-  margin: 0; /* remove old bottom margin */
-}
-
-.input-group button {
-  flex-shrink: 0; /* button stays its natural width */
 }
 
 input {
