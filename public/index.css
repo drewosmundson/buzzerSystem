@@ -33,12 +33,67 @@ h1 {
   margin-bottom: 3rem;
 }
 
+h2 {
+  text-align: center;
+  color: var(--light-text);
+  margin-bottom: 1rem;
+}
+
 h3 {
   font-size: 1.4rem;
   color: var(--text-color);
   margin-top: 2rem;
   margin-bottom: 3rem;
 }
+
+input {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.2);
+}
+
+button {
+  background: var(--primary-gradient);
+  color: rgb(243, 245, 247);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+button:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hidden {
+  display: none;
+}
+
 .section {
   background: #172c63;
   margin: 4rem auto;
@@ -82,38 +137,71 @@ h3 {
   margin: 0;
 }
 
-button {
-  background: var(--primary-gradient);
-  color: rgb(243, 245, 247);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  cursor: pointer;
+/* Round info */
+.round-info {
+  text-align: center;
+  font-size: 1.2rem;
+  color: var(--accent-color);
+  margin-bottom: 2rem;
+}
+
+/* Control panel (countdown + buttons) */
+.control-panel {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.control-panel select,
+.control-panel button {
+  padding: 10px 15px;
   font-size: 1rem;
-  font-weight: 500;
-  transition: var(--transition);
-  box-shadow: var(--shadow);
-  text-decoration: none;
-}
-
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-input {
-  width: 100%;
-  padding: 12px 15px;
-  margin-bottom: 15px;
+  border-radius: 6px;
   border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: var(--transition);
 }
 
-input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.2);
+.control-panel select {
+  min-width: 150px;
 }
-  
+
+
+/* Tabs / content sections */
+.tab-content {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  background: #fff;
+  box-shadow: var(--card-shadow);
+}
+
+/* Scoreboard table */
+.scoreboard {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+/* Container for side-by-side layout */
+.results-container {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+  flex-wrap: wrap; /* stack on small screens */
+}
+
+/* Each box should share space evenly */
+.results-container .tab-content {
+  flex: 1 1 45%; /* grow, shrink, basis */
+  min-width: 300px; /* prevents squishing too much */
+}
+
+/* Round history scrollable box */
+.round-history {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius);
+  background: #fafafa;
+}

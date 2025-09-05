@@ -30,10 +30,6 @@ const PORT = process.env.PORT || 3000;
 // disconnect
 const rooms = {}; 
 
-// server helper functions
-function logCurrentHostAndParticipants(object){
-  console.log(object)
-}
 // notebly missing 6789 and several others to avoid meme "funny" numbers that would 
 // disrupt a classroom i.e. '6,7' and '69'
 function generateRoomCode() {
@@ -46,15 +42,13 @@ function generateRoomCode() {
   return roomCode;
 }
 
-// socket io functions
+// SOCKET IO FUNCTIONS
 // socket.emit('event', data) reply only to the same client.
 // socket.to(roomId).emit('event', data) send to everyone in the room except the sender.
 // io.to(roomId).emit('event', data) send to all clients in a room, including the sender.
 // io.emit('event', data) broadcast to everyone connected.
 
 function createRoom(socket) {
-
-  console.log("here");
   const roomCode = generateRoomCode();
   // room state
   rooms[roomCode] = {
@@ -69,7 +63,6 @@ function createRoom(socket) {
   // join socket to the room that all the participants will be apart of
   socket.join(roomCode);
   socket.emit('roomCreated', { roomCode })
-  logCurrentHostAndParticipants(roomCode);
 }
 
 function joinRoom(rooms) {
@@ -106,15 +99,15 @@ function playerRejoinRoom(rooms) {
 // server protocol
 io.on('connection', (socket) => {
   console.log('socket ' + socket.id + ' is connected');
-  socket.on('indexCreateRoomRequest', () => createRoom(socket));
-  socket.on('indexJoinRoomRequest', (data) => joinRoom());
 
   // from hosts
+  socket.on('hostCreateRoomRequest', () => createRoom(socket));
   socket.on('hostStartsCountdown', (data) => startCountdown());
   socket.on('hostStopsCountdown', (data) => stopCountdown());
   socket.on('hostLeaveRoomRequest', (data) => hostLeaveRoom());
 
   // from players
+  socket.on('playerJoinRoomRequest', (data) => joinRoom());
   socket.on('playerBuzz', (data) => playerBuzz());
   socket.on('playerleaveRoomRequest', (data) => playerLeaveRoom());
   socket.on('playerRejoinRoomRequest', (data) => rejoinRoom());

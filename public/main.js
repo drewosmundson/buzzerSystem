@@ -17,9 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // state variables
   let socket = null;
-  let currentScreen = 'mainMenu'; // Track current screen for navigation
-  let Host;
-  let Player;
+  let hostInstance;
+  let playerInstance;
 
   try {
     socket = io();
@@ -29,16 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Host
   createRoomButton?.addEventListener('click', () => {
-    console.log("testMEssage")
-    window.location.href = "./host.html"
-    Host = new Host(socket);
-    Host.startGame();
+    hostInstance = new Host(socket);
+    hostInstance.startGame();
   });
 
   // Players
   joinRoomButton?.addEventListener('click', () => {
-    Player = new Player(socket);
-    Player.joinGame();
+    playerInstance = new Player(socket);
+    playerInstance.joinGame();
   });
 });
 
