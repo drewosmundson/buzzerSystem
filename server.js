@@ -1,6 +1,12 @@
 // server.js this is the entry point for this program
 // it handles init processes requests and sends data to the user
 
+// Naming scheme for event handling:
+// events sent from the server will be in past tense
+// events sent from a client will be in present tense
+// if the event comes from a HOST the event begins with host
+// if the event comes from a PLAYER the event begins with player
+
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -48,7 +54,7 @@ function generateRoomCode() {
 // io.to(roomId).emit('event', data) send to all clients in a room, including the sender.
 // io.emit('event', data) broadcast to everyone connected.
 
-function createRoom(socket) {
+function hostCreateRoom(socket) {
   const roomCode = generateRoomCode();
   // room state
   rooms[roomCode] = {
@@ -71,7 +77,7 @@ function joinRoom(rooms) {
 
 // host screen
 function hostStartCountdown(rooms) {
-  
+  io.to(roomId).emit('event', data)
 }
 
 function hostStopCountdown(rooms) {
@@ -100,17 +106,16 @@ io.on('connection', (socket) => {
   console.log('socket ' + socket.id + ' is connected');
 
   // from hosts
-  socket.on('hostCreateRoomRequest', () => createRoom(socket));
-  socket.on('hostStartsCountdown', (data) => startCountdown());
-  socket.on('hostStopsCountdown', (data) => stopCountdown());
-  socket.on('hostLeaveRoomRequest', (data) => hostLeaveRoom());
+  socket.on('hostCreateRoom', () => hostCreateRoom(socket));
+  socket.on('hostStartsCountdown', (data) => hostStartCountdown(socket));
+  socket.on('hostStopsCountdown', (data) => hostStopCountdown());
+  socket.on('hostLeftRoom', (data) => hostLeaveRoom());
 
   // from players
-  socket.on('playerJoinRoomRequest', (data) => joinRoom());
+  socket.on('playerJoinsRoom', (data) => joinRoom());
   socket.on('playerBuzz', (data) => playerBuzz());
-  socket.on('playerleaveRoomRequest', (data) => playerLeaveRoom());
-  socket.on('playerRejoinRoomRequest', (data) => rejoinRoom());
-
+  socket.on('playerLeavesRoom', (data) => playerLeaveRoom());
+  socket.on('playerRejoinRoom', (data) => rejoinRoom());
 });
 
 
