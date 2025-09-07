@@ -58,7 +58,9 @@ function hostCreateRoom(socket) {
   const roomCode = generateRoomCode();
   // room state
   rooms[roomCode] = {
+    roomCode: roomCode,
     hostSocketID: socket.id,
+    roomCode: roomCode,
     players: {},
     roundHistory: {},
     currentRound: 1,
@@ -68,7 +70,8 @@ function hostCreateRoom(socket) {
   }
   // join socket to the room that all the participants will be apart of
   socket.join(roomCode);
-  socket.emit('roomCreated', { roomCode })
+  socket.emit('roomCreated', rooms[roomCode]);
+  //socket.emit('roomCreated', { roomCode }) // would send as object data.roomCode
 }
 
 function joinRoom(rooms) {

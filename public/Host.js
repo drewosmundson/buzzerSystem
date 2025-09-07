@@ -6,20 +6,24 @@
 export class Host {
   constructor(socket) {
     this.socket = socket;
+    this.currentRoundNumber = 1;
 
     document.getElementById("mainMenu").classList.add("hidden");
     document.getElementById("hostScreen").classList.remove("hidden");
 
-    this.roomcode = document.getElementById("roomCode");
+    // elements edited on HTML not sent to the server
+    this.roomCode = document.getElementById("roomCode");
     this.playerList = document.getElementById("playerList");
     this.timerLength = document.getElementById('countdownTime');
+    this.currentRoundDisplay = document.getElementById('currentRoundDisplay');
+    this.setUpDocumentEventListeners();
 
+    // elements whose updates are sent to the server
     this.hostStartCountdownButton = document.getElementById('hostStartCountdownButton');
     this.hostEndRoundButton = document.getElementById('hostEndRoundButton');
-
-    this.setUpDocumentEventListeners();
     this.setUpServerListeners();
 
+    // ping to the server that the host created a room and wants to announce it
     this.socket.emit('hostCreateRoom');
 
   }
@@ -32,6 +36,8 @@ export class Host {
   }
   endRound() {
     console.log("endRoundButton");
+    this.currentRoundNumber += 1;
+    this.currentRoundDisplay.textContent = this.currentRoundNumber;
     this.hostEndRoundButton.disabled = true;
     this.hostStartCountdownButton.disabled = false;
   }
@@ -48,8 +54,8 @@ export class Host {
   }
 
   // received from the server
-  roomCreated(roomCode) {
-    this.roomCode.textContent = roomCode;
+  roomCreated(data) {
+    this.roomCode.textContent = data.roomCode;
   }
 
   playerJoined() {
@@ -59,8 +65,8 @@ export class Host {
     // display players
   }
   setUpServerListeners() {
-    this.socket.on("roomCreated", (roomCode) => {
-      this.roomCreated(roomCode);
+    this.socket.on("roomCreated", (data) => {
+      this.roomCreated(data);
     });
 
     this.socket.on("playerJoined", (newPlayerList) => {
