@@ -36,10 +36,10 @@ const PORT = process.env.PORT || 3000;
 // disconnect
 const rooms = {}; 
 
-// notebly missing 6789 and several others to avoid meme "funny" numbers that would 
+// notebly missing 6 and to avoid meme "funny" numbers that would 
 // disrupt a classroom i.e. '6,7' and '69'
 function generateRoomCode() {
-  const roomCodeOptions = "12345ABCDEFWXYZ"
+  const roomCodeOptions = "12345789"
   let roomCode = "";
   for(let i = 0; i < ROOMCODELENGTH; i++){
     let randomNumber = Math.floor(Math.random() * roomCodeOptions.length);

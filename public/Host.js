@@ -1,8 +1,3 @@
-// the host does not have a rejoin method because if the host leaves the room it should disconnect the other participants.
-
-
-// document elemenets that only react or received from the server do not have the HOST tag
-
 export class Host {
   constructor(socket) {
     this.socket = socket;
@@ -16,62 +11,50 @@ export class Host {
     this.playerList = document.getElementById("playerList");
     this.timerLength = document.getElementById('countdownTime');
     this.currentRoundDisplay = document.getElementById('currentRoundDisplay');
-    this.setUpDocumentEventListeners();
 
     // elements whose updates are sent to the server
     this.hostStartCountdownButton = document.getElementById('hostStartCountdownButton');
     this.hostEndRoundButton = document.getElementById('hostEndRoundButton');
+
+    this.setUpDocumentEventListeners();
     this.setUpServerListeners();
 
-    // ping to the server that the host created a room and wants to announce it
+    // ping to the server that the host created a room
     this.socket.emit('hostCreateRoom');
-
   }
 
-
-  startRound() {
+  sendStartRound() {
     console.log("startCountdownButton");
+    const countdownTime = parseInt(this.timerLength.value, 10) || 0;
+    this.socket.emit('hostStartsCountdown', { countdownTime });
     this.hostStartCountdownButton.disabled = true;
     this.hostEndRoundButton.disabled = false;
   }
-  endRound() {
+
+  sendEndRound() {
     console.log("endRoundButton");
     this.currentRoundNumber += 1;
     this.currentRoundDisplay.textContent = this.currentRoundNumber;
     this.hostEndRoundButton.disabled = true;
     this.hostStartCountdownButton.disabled = false;
   }
-  resetGame() {
 
-  }
-  leaveRoom() {
-
-  }
   setUpDocumentEventListeners() {
-    this.hostStartCountdownButton?.addEventListener('click', () => {this.startRound()});
-
-    this.hostEndRoundButton?.addEventListener('click', () => {this.endRound()});
+    this.hostStartCountdownButton?.addEventListener('click', () => {this.sendStartRound()});
+    this.hostEndRoundButton?.addEventListener('click', () => {this.sendEndRound()});
   }
 
   // received from the server
-  roomCreated(data) {
+  receivedRoomCreated(data) {
     this.roomCode.textContent = data.roomCode;
   }
 
-  playerJoined() {
-    // for length of player list 
-    // const newItem = document.createElement("li");
-    // newItem.innerHTML = "<b>New</b> List Item"; // For HTML content
-    // display players
+  receivedPlayerJoined(newPlayerList) {
+    // display players later
   }
-  setUpServerListeners() {
-    this.socket.on("roomCreated", (data) => {
-      this.roomCreated(data);
-    });
 
-    this.socket.on("playerJoined", (newPlayerList) => {
-      console.log("Player joined:", newPlayerList);
-      this.playerJoined(newPlayerList);
-    });
+  setUpServerListeners() {
+    this.socket.on("roomCreated", (data) => this.receivedRoomCreated(data));
+    this.socket.on("playerJoined", (newPlayerList) => this.receivedPlayerJoined(newPlayerList));
   }
 }
