@@ -78,13 +78,13 @@ function joinRoom(rooms) {
  
 }
 
-// host screen
-function hostStartCountdown(rooms) {
-  io.to(roomId).emit('event', data)
+// from host to all other clients
+function hostStartCountdown(socket, data) {
+  socket.to(data.roomCode).emit('hostStartedCountdown', data.countdownTime)
 }
 
-function hostStopCountdown(rooms) {
- 
+function hostStopCountdown(socket, data) {
+  socket.to(data.roomCode).emit('hostStoppedCountdown')
 }
 
 function hostLeaveRoom(rooms) {
@@ -110,7 +110,7 @@ io.on('connection', (socket) => {
 
   // from hosts
   socket.on('hostCreateRoom', () => hostCreateRoom(socket));
-  socket.on('hostStartsCountdown', (data) => hostStartCountdown(socket));
+  socket.on('hostStartsCountdown', (data) => hostStartCountdown(socket, data));
   socket.on('hostStopsCountdown', (data) => hostStopCountdown());
   socket.on('hostLeftRoom', (data) => hostLeaveRoom());
 
