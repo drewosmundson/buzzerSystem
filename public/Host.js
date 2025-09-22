@@ -1,16 +1,19 @@
 export class Host {
   constructor(socket) {
     this.socket = socket;
-    this.currentRoundNumber = 1;
+    this.currentRoundNumber = 0;
+    this.currentCountdownTime = 0;
+    this.roomCode = null;
 
     document.getElementById("mainMenu").classList.add("hidden");
     document.getElementById("hostScreen").classList.remove("hidden");
 
     // elements edited on HTML not sent to the server
-    this.roomCode = document.getElementById("roomCode");
+    this.roomCodeDisplay = document.getElementById("roomCode");
+    this.currentRoundDisplay = document.getElementById('currentRoundDisplay');
     this.playerList = document.getElementById("playerList");
     this.timerLength = document.getElementById('countdownTime');
-    this.currentRoundDisplay = document.getElementById('currentRoundDisplay');
+    this.countdownDisplay
 
     // elements whose updates are sent to the server
     this.hostStartCountdownButton = document.getElementById('hostStartCountdownButton');
@@ -21,22 +24,52 @@ export class Host {
 
     // ping to the server that the host created a room
     this.socket.emit('hostCreateRoom');
+
   }
 
+
+  startCountdown() {
+    this.currentCountdownTime = parseInt(this.timerLength.value, 10) || 0;
+    const timeRemaining = this.currentCountdownTime;
+  
+    
+  }
+
+
   sendStartRound() {
-    console.log("startCountdownButton");
     const countdownTime = parseInt(this.timerLength.value, 10) || 0;
-    this.socket.emit('hostStartsCountdown', { countdownTime });
+
+    this.currentRoundNumber += 1;
+    this.currentRoundDisplay.textContent = this.currentRoundNumber;
+
+    const data = { 
+      countdownTime,
+      currentRound: this.currentRoundNumber,
+      roomCode: this.roomCode
+    }
+
+    this.socket.emit('hostStartsCountdown', data );
+
     this.hostStartCountdownButton.disabled = true;
     this.hostEndRoundButton.disabled = false;
+
+    this.startCountdown();
   }
 
   sendEndRound() {
-    console.log("endRoundButton");
-    this.currentRoundNumber += 1;
-    this.currentRoundDisplay.textContent = this.currentRoundNumber;
     this.hostEndRoundButton.disabled = true;
     this.hostStartCountdownButton.disabled = false;
+  }
+
+  sendResetGame() {
+    this.currentRoundNumber = 0;
+    this.currentRoundDisplay.textContent = this.currentRoundNumber;
+
+    const data = {
+      roomCode: this.roomCode,
+      currentRound: this.currentRoundNumber,
+    }
+    this.socket.emit('hostResetsGame', data);
   }
 
   setUpDocumentEventListeners() {
@@ -46,7 +79,8 @@ export class Host {
 
   // received from the server
   receivedRoomCreated(data) {
-    this.roomCode.textContent = data.roomCode;
+    this.roomCode = data.roomCode;
+    this.roomCode.textContent = this.roomCode;
   }
 
   receivedPlayerJoined(newPlayerList) {

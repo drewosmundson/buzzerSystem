@@ -7,7 +7,7 @@ export class Player {
     this.setUpServerListeners();
     this.socket.emit('playerJoinRoomRequest');
   }
-
+  
 
 
 }
