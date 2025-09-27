@@ -34,8 +34,11 @@ const PORT = process.env.PORT || 3000;
 // data structure to keep track of hosts each room to one host rooms can have many players
 // lobbies also contain a list of all the players that have ever been in that room to preserve on
 // disconnect
-const rooms = {}; 
+const rooms = {};
 
+// -----------------------
+// SERVER HELPER FUNCTIONS
+//------------------------
 // notebly missing 6 and to avoid meme "funny" numbers that would 
 // disrupt a classroom i.e. '6,7' and '69'
 function generateRoomCode() {
@@ -47,7 +50,9 @@ function generateRoomCode() {
   }
   return roomCode;
 }
-
+// -----------------------
+// HOST ACTIONS
+//------------------------
 // SOCKET IO FUNCTIONS
 // socket.emit('event', data) reply only to the same client.
 // socket.to(roomId).emit('event', data) send to everyone in the room except the sender.
@@ -64,8 +69,6 @@ function hostCreateRoom(socket) {
     players: {},
     roundHistory: {},
     currentRound: 1,
-    countdownTime: 0,
-    cooutdownStarted: false,
     buzzerActive: false,
   }
   // join socket to the room that all the participants will be apart of
@@ -74,35 +77,62 @@ function hostCreateRoom(socket) {
   //socket.emit('roomCreated', { roomCode }) // would send as object data.roomCode
 }
 
-function joinRoom(rooms) {
- 
-}
-
 // from host to all other clients
-function hostStartCountdown(socket, data) {
-  socket.to(data.roomCode).emit('hostStartedCountdown', data.countdownTime)
+function hostStartRound(socket, data) {
+  socket.to(data.roomCode).emit('hostStartedRound')
 }
 
-function hostStopCountdown(socket, data) {
-  socket.to(data.roomCode).emit('hostStoppedCountdown')
+function hostStopRound(socket, data) {
+  socket.to(data.roomCode).emit('hostStoppedRound')
 }
 
 function hostLeaveRoom(rooms) {
   
 }
 
+// -----------------------
+// PLAYER ACTIONS
+//------------------------
+
+function playerJoinRoomRequest(socket, data) {
+  if(data.roomCode in rooms) {
+    const room = rooms[data.roomCode];
+    const playerNumber = Object.keys(room.players).length + 1;
+    
+    room.players[socket.id] = {
+      socketId: socket.id,
+      playerNumber: playerNumber,
+      joinTime: Date.now()
+    };
+    
+    socket.join(data.roomCode);
+    
+    // Confirm join to the player
+    socket.emit('playerJoinRoomRequestAccepted', {
+      roomCode: data.roomCode,
+      playerNumber: playerNumber,
+      currentRound: room.currentRound
+    });
+    
+    // Notify host of new player
+    socket.to(data.roomCode).emit('playerJoined', room.players);
+  } else {
+    socket.emit('playerJoinRoomRequestRejected', 'Room not found');
+  }
+}
+
+
 // Player screen
 function playerBuzz(rooms) {
   
 }
 
-function playerLeaveRoom(rooms) {
+function playerLeftRoom(rooms) {
 }
 
 function playerRejoinRoom(rooms) {
   
 }
-
 
 // server protocol
 io.on('connection', (socket) => {
@@ -110,18 +140,28 @@ io.on('connection', (socket) => {
 
   // from hosts
   socket.on('hostCreateRoom', () => hostCreateRoom(socket));
-  socket.on('hostStartsCountdown', (data) => hostStartCountdown(socket, data));
-  socket.on('hostStopsCountdown', (data) => hostStopCountdown());
+  socket.on('hostStartRound', (data) => hostStartRound(socket, data));
+  socket.on('hostStopRound', (data) => hostStopCountdown());
   socket.on('hostLeftRoom', (data) => hostLeaveRoom());
 
   // from players
-  socket.on('playerJoinsRoom', (data) => joinRoom());
+  socket.on('playerJoinRoomRequest', (data) => playerJoinRoomRequest(socket, data));
   socket.on('playerBuzz', (data) => playerBuzz());
-  socket.on('playerLeavesRoom', (data) => playerLeaveRoom());
-  socket.on('playerRejoinRoom', (data) => rejoinRoom());
+  socket.on('playerLeftRoom', (data) => playerLeaveRoom());
+  socket.on('playerRejoinRoomRequest', (data) => rejoinRoom());
 });
 
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+
+
+
+
+
+
+
+
+

@@ -2,63 +2,65 @@ export class Host {
   constructor(socket) {
     this.socket = socket;
     this.currentRoundNumber = 0;
-    this.currentCountdownTime = 0;
     this.roomCode = null;
+    this.roomParticipants = null;
 
     document.getElementById("mainMenu").classList.add("hidden");
     document.getElementById("hostScreen").classList.remove("hidden");
 
     // elements edited on HTML not sent to the server
-    this.roomCodeDisplay = document.getElementById("roomCode");
+    this.roomCodeDisplay = document.getElementById('roomCode');
     this.currentRoundDisplay = document.getElementById('currentRoundDisplay');
-    this.playerList = document.getElementById("playerList");
-    this.timerLength = document.getElementById('countdownTime');
-    this.countdownDisplay
+    this.playerList = document.getElementById('playerList');
 
     // elements whose updates are sent to the server
-    this.hostStartCountdownButton = document.getElementById('hostStartCountdownButton');
+    this.hostStartRoundButton = document.getElementById('hostStartRoundButton');
     this.hostEndRoundButton = document.getElementById('hostEndRoundButton');
 
-    this.setUpDocumentEventListeners();
+    this.setUpDocumentListeners();
     this.setUpServerListeners();
 
     // ping to the server that the host created a room
     this.socket.emit('hostCreateRoom');
-
   }
 
-
-  startCountdown() {
-    this.currentCountdownTime = parseInt(this.timerLength.value, 10) || 0;
-    const timeRemaining = this.currentCountdownTime;
-  
-    
+  /////////////////////////////////
+  // sending events from server
+  /////////////////////////////////
+  setUpDocumentListeners() {
+    this.hostStartRoundButton?.addEventListener('click', () => {this.sendStartRound()});
+    this.hostEndRoundButton?.addEventListener('click', () => {this.sendEndRound()});
+    this.resetGameButton?.addEventListener('click', () => this.sendResetGame());
   }
-
 
   sendStartRound() {
-    const countdownTime = parseInt(this.timerLength.value, 10) || 0;
-
+    if(this.roomParticipants == null){
+      // something
+    }
     this.currentRoundNumber += 1;
     this.currentRoundDisplay.textContent = this.currentRoundNumber;
 
     const data = { 
-      countdownTime,
       currentRound: this.currentRoundNumber,
       roomCode: this.roomCode
     }
 
-    this.socket.emit('hostStartsCountdown', data );
+    this.socket.emit('hostStartRound', data );
 
-    this.hostStartCountdownButton.disabled = true;
+    this.hostStartRoundButton.disabled = true;
     this.hostEndRoundButton.disabled = false;
-
-    this.startCountdown();
   }
 
   sendEndRound() {
+    const data = { 
+      currentRound: this.currentRoundNumber,
+      roomCode: this.roomCode
+    }
+
+    this.socket.emit('hostStopRound', data );
+
     this.hostEndRoundButton.disabled = true;
-    this.hostStartCountdownButton.disabled = false;
+    this.hostStartRoundButton.disabled = false;
   }
 
   sendResetGame() {
@@ -72,23 +74,23 @@ export class Host {
     this.socket.emit('hostResetsGame', data);
   }
 
-  setUpDocumentEventListeners() {
-    this.hostStartCountdownButton?.addEventListener('click', () => {this.sendStartRound()});
-    this.hostEndRoundButton?.addEventListener('click', () => {this.sendEndRound()});
-  }
 
-  // received from the server
-  receivedRoomCreated(data) {
-    this.roomCode = data.roomCode;
-    this.roomCode.textContent = this.roomCode;
-  }
 
-  receivedPlayerJoined(newPlayerList) {
-    // display players later
-  }
+  ///////////////////////////////
+  // received events from server
+  /////////////////////////////////
 
   setUpServerListeners() {
     this.socket.on("roomCreated", (data) => this.receivedRoomCreated(data));
     this.socket.on("playerJoined", (newPlayerList) => this.receivedPlayerJoined(newPlayerList));
+  }
+
+  receivedRoomCreated(data) {
+    this.roomCode = data.roomCode;
+    this.roomCodeDisplay.textContent = this.roomCode;
+  }
+
+  receivedPlayerJoined(newPlayerList) {
+    // display players later
   }
 }
