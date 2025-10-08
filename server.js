@@ -1,12 +1,24 @@
-// server.js - Node.js server using Socket.IO for a buzzer system with countdown and round tracking
+// server.js this is the entry point for this program
+// it handles init processes requests and sends data to the user
 
-const DISCONNECT_GRACE_PERIOD = 0; // 60 seconds before actually removing participant
+// Naming scheme for event handling:
+// events sent from the server will be in past tense
+// events sent from a client will be in present tense
+// if the event comes from a HOST the event begins with host
+// if the event comes from a PLAYER the event begins with player
 
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
+// server.js - Complete buzzer system server
+import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+// __dirname replacement in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Create new instance of express
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -14,397 +26,358 @@ const io = new Server(server);
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Data structures to track rooms and buzzer presses
+const ROOMCODELENGTH = 4;
+const PORT = process.env.PORT || 3000;
+
+// data structure to keep track of hosts each room to one host rooms can have many players
+// lobbies also contain a list of all the players that have ever been in that room to preserve on
+// disconnect
 const rooms = {};
-const disconnectedParticipants = {}; // Store disconnected participants by room
 
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-
-  // New handler for participants rejoining
-  socket.on('rejoin-room', ({ roomId, participantId }) => {
-    console.log(`Attempt to rejoin room ${roomId} with ID ${participantId}`);
-    
-    if (!rooms[roomId]) {
-      socket.emit('error', { message: 'Room does not exist' });
-      return;
-    }
-    
-    // Check if this was a participant that was in disconnect grace period
-    if (disconnectedParticipants[roomId] && 
-        disconnectedParticipants[roomId][participantId]) {
-      
-      // Clear the timeout that would have removed them
-      clearTimeout(disconnectedParticipants[roomId][participantId].timeoutId);
-      delete disconnectedParticipants[roomId][participantId];
-      
-      // Restore their previous data
-      const participantData = rooms[roomId].participants[participantId];
-      
-      if (participantData) {
-        // Update the socket ID but keep their participant ID and data
-        participantData.socketId = socket.id;
-        socket.join(roomId);
-        
-        // Send the current state to the rejoined participant
-        socket.emit('rejoined-room', { 
-          roomId,
-          isHost: rooms[roomId].hostId === participantId,
-          participants: Object.values(rooms[roomId].participants),
-          buzzerState: rooms[roomId].buzzerState,
-          rounds: rooms[roomId].rounds,
-          currentRound: rooms[roomId].currentRound,
-          participantId: participantId,
-          playerNum: parseInt(participantData.name) // Send back their player number
-        });
-        
-        // Let the host know they're back
-        socket.to(rooms[roomId].hostId).emit('participant-rejoined', {
-          id: participantId,
-          name: participantData.name
-        });
-        
-        console.log(`Player ${participantData.name} rejoined room: ${roomId}`);
-      } else {
-        socket.emit('error', { message: 'Could not find your previous session' });
-      }
-    } else {
-      socket.emit('error', { message: 'Session expired or not found' });
-    }
-  });
-  
-  // Create a new room
-  socket.on('create-room', () => {
-    const roomId = generateRoomId();
-    rooms[roomId] = {
-      hostId: socket.id,
-      participants: {},
-      buzzerState: 'standby', // 'standby', 'countdown', 'active', 'finished'
-      buzzerPresses: [],
-      countdownEndTime: null,
-      rounds: [], // Store completed rounds
-      currentRound: 1, // Track current round number
-      playerNumbers: [] // Track taken player numbers
-    };
-    
-    socket.join(roomId);
-    socket.emit('room-created', { roomId });
-    console.log(`Room created: ${roomId} by host: ${socket.id}`);
-  });
-
-  // Join an existing room with player number
-  socket.on('join-room', ({ roomId, playerNum }) => {
-    if (!rooms[roomId]) {
-      socket.emit('join-error', { message: 'Room does not exist' });
-      return;
-    }
-    
-    // Validate the player number
-    if (isNaN(playerNum) || playerNum < 1 || playerNum > 50) {
-      socket.emit('join-error', { message: 'Player number must be between 1 and 50' });
-      return;
-    }
-    
-    // Check if the player number is already taken
-    if (rooms[roomId].playerNumbers.includes(playerNum)) {
-      socket.emit('join-error', { message: `Player number ${playerNum} is already taken` });
-      return;
-    }
-    
-    // Add the player number to the taken list
-    rooms[roomId].playerNumbers.push(playerNum);
-    
-    // Create participant
-    const participantId = socket.id;
-    rooms[roomId].participants[participantId] = {
-      id: participantId,
-      socketId: socket.id,
-      name: playerNum.toString(), // Store the player number as the name
-      hasPressed: false,
-      score: 0
-    };
-    
-    socket.join(roomId);
-    
-    // Notify the host about the new participant
-    socket.to(rooms[roomId].hostId).emit('participant-joined', {
-      id: participantId, 
-      name: playerNum.toString()
-    });
-    
-    socket.emit('joined-room', { 
-      roomId,
-      isHost: false,
-      participants: Object.values(rooms[roomId].participants),
-      buzzerState: rooms[roomId].buzzerState,
-      rounds: rooms[roomId].rounds,
-      currentRound: rooms[roomId].currentRound,
-      playerNum: playerNum
-    });
-    
-    console.log(`Player ${playerNum} joined room: ${roomId}`);
-  });
-
-  // Start countdown (host only)
-  socket.on('start-countdown', ({ roomId, countdownSeconds }) => {
-    if (!rooms[roomId] || rooms[roomId].hostId !== socket.id) {
-      return;
-    }
-
-    // Reset state for new round
-    rooms[roomId].buzzerState = 'countdown';
-    rooms[roomId].buzzerPresses = [];
-    const endTime = Date.now() + (countdownSeconds * 1000);
-    rooms[roomId].countdownEndTime = endTime;
-
-    // Reset all participants' hasPressed flag
-    for (const participantId in rooms[roomId].participants) {
-      rooms[roomId].participants[participantId].hasPressed = false;
-    }
-
-    // Notify everyone in the room about the countdown
-    io.to(roomId).emit('countdown-started', {
-      buzzerState: 'countdown',
-      countdownSeconds,
-      endTime,
-      currentRound: rooms[roomId].currentRound
-    });
-
-    console.log(`Countdown started in room ${roomId} for ${countdownSeconds} seconds (Round ${rooms[roomId].currentRound})`);
-
-    // Schedule state change to active when countdown ends
-    setTimeout(() => {
-      if (rooms[roomId]) {
-        rooms[roomId].buzzerState = 'active';
-        io.to(roomId).emit('buzzer-active', {
-          buzzerState: 'active'
-        });
-        console.log(`Buzzer now active in room ${roomId}`);
-      }
-    }, countdownSeconds * 1000);
-  });
-
-  // Handle buzzer press
-  socket.on('buzz', ({ roomId, clientTimestamp }) => {
-    if (!rooms[roomId] || rooms[roomId].buzzerState !== 'active') {
-      return;
-    }
-
-    const participant = rooms[roomId].participants[socket.id];
-    if (!participant || participant.hasPressed) return;
-
-    // Mark participant as having pressed
-    participant.hasPressed = true;
-    
-    // We'll use server timestamp for fairness but record client timestamp too
-    const serverTimestamp = Date.now();
-    
-    // Calculate time from when buzzer became active
-    const reactionTime = serverTimestamp - rooms[roomId].countdownEndTime;
-    
-    // Record the buzzer press
-    const buzzerPress = {
-      id: socket.id,
-      name: participant.name,
-      serverTimestamp,
-      clientTimestamp,
-      reactionTime
-    };
-    
-    rooms[roomId].buzzerPresses.push(buzzerPress);
-    
-    // Sort buzzer presses by reaction time
-    rooms[roomId].buzzerPresses.sort((a, b) => a.reactionTime - b.reactionTime);
-
-    // Notify everyone in the room about the buzz
-    io.to(roomId).emit('buzz-event', {
-      id: socket.id,
-      name: participant.name,
-      buzzerPresses: rooms[roomId].buzzerPresses
-    });
-
-    // Notify just this participant about their buzz
-    socket.emit('your-buzz-recorded', {
-      reactionTime
-    });
-
-    console.log(`Buzz from Player ${participant.name} in room ${roomId} with reaction time ${reactionTime}ms`);
-  });
-
-  // End buzzer round (host only)
-  socket.on('end-round', ({ roomId }) => {
-    if (!rooms[roomId] || rooms[roomId].hostId !== socket.id) {
-      return;
-    }
-  
-    // First, handle the round ending functionality
-    rooms[roomId].buzzerState = 'finished';
-    
-    // Save the round results if there were any buzzes
-    if (rooms[roomId].buzzerPresses.length > 0) {
-      // Award points to the winner (first buzzer)
-      const winnerId = rooms[roomId].buzzerPresses[0].id;
-      if (rooms[roomId].participants[winnerId]) {
-        rooms[roomId].participants[winnerId].score += 1;
-      }
-      
-      // Store round results
-      const roundResult = {
-        roundNumber: rooms[roomId].currentRound,
-        buzzerPresses: [...rooms[roomId].buzzerPresses],
-        winner: {
-          id: rooms[roomId].buzzerPresses[0].id,
-          name: rooms[roomId].buzzerPresses[0].name,
-          reactionTime: rooms[roomId].buzzerPresses[0].reactionTime
-        },
-        timestamp: Date.now()
-      };
-      
-      rooms[roomId].rounds.push(roundResult);
-    } else {
-      // Store empty round result if no one buzzed
-      const roundResult = {
-        roundNumber: rooms[roomId].currentRound,
-        buzzerPresses: [],
-        winner: null,
-        timestamp: Date.now()
-      };
-      
-      rooms[roomId].rounds.push(roundResult);
-    }
-  
-    // Get participant scores
-    const scores = {};
-    for (const id in rooms[roomId].participants) {
-      scores[id] = {
-        name: rooms[roomId].participants[id].name,
-        score: rooms[roomId].participants[id].score
-      };
-    }
-  
-    // Notify everyone about the round ending
-    io.to(roomId).emit('round-ended', {
-      buzzerState: 'finished',
-      buzzerPresses: rooms[roomId].buzzerPresses,
-      rounds: rooms[roomId].rounds,
-      scores: scores
-    });
-  
-    console.log(`Round ${rooms[roomId].currentRound} ended in room ${roomId}`);
-  
-    // Now automatically reset for the next round (combining reset-buzzer functionality)
-    rooms[roomId].buzzerState = 'standby';
-    rooms[roomId].buzzerPresses = [];
-    rooms[roomId].countdownEndTime = null;
-    rooms[roomId].currentRound += 1; // Increment round number
-  
-    // Reset all participants' hasPressed flag
-    for (const participantId in rooms[roomId].participants) {
-      rooms[roomId].participants[participantId].hasPressed = false;
-    }
-  
-    // Notify everyone about the reset for next round
-    io.to(roomId).emit('buzzer-reset', {
-      buzzerState: 'standby',
-      buzzerPresses: [],
-      currentRound: rooms[roomId].currentRound,
-      rounds: rooms[roomId].rounds,
-      scores: scores
-    });
-  
-    console.log(`Buzzer reset in room ${roomId} for round ${rooms[roomId].currentRound}`);
-  });
-
-// Update the disconnect handler in server.js
-
-// Handle disconnection
-socket.on('disconnect', () => {
-  // Find if user was in any room
-  for (const roomId in rooms) {
-    // If user was a host
-    if (rooms[roomId].hostId === socket.id) {
-      // For hosts, we close the room
-      // Notify all participants that the room is closing
-      io.to(roomId).emit('room-closed', { message: 'Host has left the room' });
-      delete rooms[roomId];
-      
-      // Also clean up any disconnected participants for this room
-      if (disconnectedParticipants[roomId]) {
-        delete disconnectedParticipants[roomId];
-      }
-      
-      console.log(`Room ${roomId} closed because host left`);
-    } 
-    // If user was a participant
-    else if (rooms[roomId].participants[socket.id]) {
-      const participant = rooms[roomId].participants[socket.id];
-      const participantName = participant.name;
-      const participantId = socket.id;
-      
-      // Instead of immediately removing them, put them in the disconnected list
-      if (!disconnectedParticipants[roomId]) {
-        disconnectedParticipants[roomId] = {};
-      }
-      
-      // Set a timeout to remove them after the grace period
-      const timeoutId = setTimeout(() => {
-        // Only if they're still disconnected after the grace period
-        if (disconnectedParticipants[roomId] && 
-            disconnectedParticipants[roomId][participantId]) {
-          
-          // Remove their player number from the taken list
-          const playerNum = parseInt(participantName);
-          const index = rooms[roomId].playerNumbers.indexOf(playerNum);
-          if (index !== -1) {
-            rooms[roomId].playerNumbers.splice(index, 1);
-          }
-          
-          // Notify host that participant left permanently
-          io.to(rooms[roomId].hostId).emit('participant-left', { 
-            id: participantId, 
-            name: participantName 
-          });
-          
-          // Remove them from the room
-          delete rooms[roomId].participants[participantId];
-          delete disconnectedParticipants[roomId][participantId];
-          
-          console.log(`Player ${participantName} permanently left room ${roomId} after grace period`);
-        }
-      }, DISCONNECT_GRACE_PERIOD);
-      
-      // Store their info for potential reconnection
-      disconnectedParticipants[roomId][participantId] = {
-        timeoutId: timeoutId,
-        disconnectTime: Date.now(),
-        playerNumber: parseInt(participantName) // Store the player number explicitly
-      };
-      
-      // Notify host that participant disconnected (but might return)
-      io.to(rooms[roomId].hostId).emit('participant-disconnected', { 
-        id: participantId, 
-        name: participantName 
-      });
-      
-      console.log(`Player ${participantName} temporarily disconnected from room ${roomId}`);
-    }
+// -----------------------
+// SERVER HELPER FUNCTIONS
+//------------------------
+// notebly missing 6 and to avoid meme "funny" numbers that would 
+// disrupt a classroom i.e. '6,7' and '69'
+function generateRoomCode() {
+  const roomCodeOptions = "12345789";
+  let roomCode = "";
+  let randomNumber = null;
+  for(let i = 0; i < ROOMCODELENGTH; i++){
+    randomNumber = Math.floor(Math.random() * roomCodeOptions.length);
+    roomCode += roomCodeOptions[randomNumber];
   }
 
-  console.log('User disconnected:', socket.id);
-});
-});
-
-// Generate a simple 6-character room ID
-function generateRoomId() {
-  const chars = '012345789';
-  let result = '';
-  for (let i = 0; i < 4; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  // Make sure room code doesn't already exist creating a longer number then scrambling
+  // this ensurs the server is less prone to stalling while keeping functionality of providing a 
+  // unique code for each room vs previous version
+  let iter = 0;
+  while(rooms[roomCode]) {
+    randomNumber = Math.floor(Math.random() * roomCodeOptions.length);
+    roomCode += roomCodeOptions[randomNumber];
+    if(!rooms[roomCode]) { // if a new code is found that is not in rooms scramble it
+      roomCode.split('') // Convert string to an array of characters
+      .sort(() => Math.random() - 0.5) // Randomly sort the characters
+      .join(''); // Join the characters back into a string 
+    }
+    // infinite loop insurance
+    iter += 1;
+    if(iter < 10){
+      return null;
+    }
   }
-  return result;
+  return roomCode;
+}
+// -----------------------
+// HOST ACTIONS
+//------------------------
+// SOCKET IO FUNCTIONS
+// socket.emit('event', data) reply only to the same client.
+// socket.to(roomId).emit('event', data) send to everyone in the room except the sender.
+// io.to(roomId).emit('event', data) send to all clients in a room, including the sender.
+// io.emit('event', data) broadcast to everyone connected.
+
+function hostCreateRoom(socket) {
+  const roomCode = generateRoomCode();
+  
+  // Create room state
+  rooms[roomCode] = {
+    roomCode: roomCode, // set when room created
+    hostSocketID: socket.id, // set when room created
+    players: {},  // updates as player joins room
+    currentRoundBuzzes: [], // updates on player buzz. resets on start round
+    roundHistory: [], // updates on stop round
+    currentRound: 1, // updates on start round
+    buzzerActive: false // updates on start and stop round
+  };
+  
+  // Join socket to the room
+  socket.join(roomCode);
+  socket.emit('roomCreated', rooms[roomCode]);  //socket.emit('roomCreated', { roomCode }) would send as object data.roomCode
+  console.log(`Room ${roomCode} created by host ${socket.id}`);
 }
 
-const PORT = process.env.PORT || 3002;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+// from host to all other clients
+function hostStartRound(socket, data) {
+  if (!rooms[data.roomCode]) return;
+  
+  const room = rooms[data.roomCode];
+  room.buzzerActive = true;
+  room.currentRoundBuzzes = [];
+  room.currentRound = data.currentRound;
+  
+  // Notify all players that round started
+  socket.to(data.roomCode).emit('hostStartedRound', {
+    currentRound: room.currentRound});
+  
+  console.log(`Host started round ${room.currentRound} in room ${data.roomCode}`);
+}
+
+function hostStopRound(io, data) {
+  if (!rooms[data.roomCode]) return;
+  
+  const room = rooms[data.roomCode];
+  room.buzzerActive = false;
+  
+  // Save round to history
+  if (room.currentRoundBuzzes.length > 0) {
+    room.roundHistory.push({
+      round: room.currentRound,
+      buzzes: [...room.currentRoundBuzzes]
+    });
+  }
+  // Notify all players and host that round stopped and recive the round history updated
+  io.to(data.roomCode).emit('hostStoppedRound', room.roundHistory);
+  
+  console.log(`Host stopped round ${room.currentRound} in room ${data.roomCode}`);
+}
+
+function hostLeaveRoom(socket, data) {
+  if (!rooms[data.roomCode]) return;
+  
+  // Notify all players that host left
+  socket.to(data.roomCode).emit('hostDisconnected');
+  
+  // Clean up room
+  delete rooms[data.roomCode];
+  console.log(`Host left and room ${data.roomCode} was deleted`);
+}
+
+function hostResetGame(socket, data) {
+  if (!rooms[data.roomCode]) return;
+  
+  const room = rooms[data.roomCode];
+  room.currentRound = 1;
+  room.roundHistory = [];
+  room.currentRoundBuzzes = [];
+  room.buzzerActive = false;
+  
+  // Notify all players about reset
+  socket.to(data.roomCode).emit('gameReset');
+  
+  console.log(`Game reset in room ${data.roomCode}`);
+}
+// -----------------------
+// PLAYER ACTIONS
+//------------------------
+function playerJoinRoomRequest(socket, data) {
+  if(data.roomCode in rooms) {
+    const room = rooms[data.roomCode];
+
+    // Check if player is rejoining
+    let playerNumber = null;
+    for (let playerId in room.players) {
+      if (room.players[playerId].socketId === socket.id) {
+        playerNumber = room.players[playerId].playerNumber;
+        break;
+      }
+    }
+    // Assign new player number if not rejoining
+    if (!playerNumber) {
+      playerNumber = Object.keys(room.players).length + 1;
+    }
+
+    room.players[socket.id] = {
+      socketId: socket.id,
+      playerNumber: playerNumber,
+      joinTime: Date.now(),
+      score: room.players[socket.id]?.score || 0
+    };
+    
+    socket.join(data.roomCode);
+    
+    // Confirm join to the player
+    socket.emit('playerJoinRoomRequestAccepted', {
+      roomCode: data.roomCode,
+      playerNumber: playerNumber,
+      currentRound: room.currentRound
+    });
+    
+    // Notify host of new player
+    io.to(room.hostSocketID).emit('playerJoined', room.players);
+    console.log(`Player ${playerNumber} joined room ${data.roomCode}`);
+  } else {
+    socket.emit('playerJoinRoomRequestRejected', 'Room not found');
+    console.log(`Player failed to join room ${data.roomCode} - room not found`);
+  }
+}
+
+
+function playerBuzz(socket, data) {
+  if (!rooms[data.roomCode]) return;
+  
+  const room = rooms[data.roomCode];
+  
+  // Only process buzz if round is active
+  if (!room.buzzerActive) {
+    console.log(`Player ${data.playerNumber} buzzed but round is not active`);
+    return;
+  }
+  
+  // Check if player already buzzed this round
+  const alreadyBuzzed = room.currentRoundBuzzes.some(
+    buzz => buzz.playerNumber === data.playerNumber
+  );
+  
+  if (alreadyBuzzed) {
+    console.log(`Player ${data.playerNumber} already buzzed this round`);
+    return;
+  }
+
+  
+  // Calculate buzz time relative to first buzz or round start
+  let buzzTime = 0;
+  if (room.currentRoundBuzzes.length > 0) {
+    buzzTime = data.timestamp - room.currentRoundBuzzes[0].timestamp;
+  }
+  
+  // Record the buzz
+  const buzzData = {
+    playerNumber: data.playerNumber,
+    timestamp: data.timestamp,
+    time: buzzTime,
+    position: room.currentRoundBuzzes.length + 1
+  };
+  
+  room.currentRoundBuzzes.push(buzzData);
+  
+  // Sort buzzes by timestamp
+  room.currentRoundBuzzes.sort((a, b) => a.timestamp - b.timestamp);
+  
+  // Recalculate times relative to first buzz
+  if (room.currentRoundBuzzes.length > 0) {
+    const firstBuzzTime = room.currentRoundBuzzes[0].timestamp;
+    room.currentRoundBuzzes.forEach((buzz, index) => {
+      buzz.time = buzz.timestamp - firstBuzzTime;
+      buzz.position = index + 1;
+    });
+  }
+  
+  // Send updated results to all clients in the room
+  io.to(data.roomCode).emit('buzzerResults', room.currentRoundBuzzes);
+  
+  console.log(`Player ${data.playerNumber} buzzed at position ${buzzData.position}`);
+}
+
+
+function playerLeaveRoom(socket, data) {
+  if (!rooms[data.roomCode]) return;
+  
+  const room = rooms[data.roomCode];
+  
+  // Mark player as disconnected but keep their data
+  if (room.players[socket.id]) {
+    room.players[socket.id].connected = false;
+    room.players[socket.id].disconnectTime = Date.now();
+  }
+  
+  // Notify host of updated player list
+  io.to(room.hostSocketID).emit('playerLeft', room.players);
+  
+  console.log(`Player ${data.playerNumber} left room ${data.roomCode}`);
+}
+
+
+// Handle disconnections
+function handleDisconnect(socket) {
+  console.log(`Socket ${socket.id} disconnected`);
+  
+  // Check if disconnected socket was a host
+  for (let roomCode in rooms) {
+    const room = rooms[roomCode];
+    
+    if (room.hostSocketID === socket.id) {
+      // Host disconnected - notify players and clean up
+      io.to(roomCode).emit('hostDisconnected');
+      delete rooms[roomCode];
+      console.log(`Host disconnected, room ${roomCode} deleted`);
+      break;
+    }
+    
+    // Check if disconnected socket was a player
+    if (room.players[socket.id]) {
+      room.players[socket.id].connected = false;
+      room.players[socket.id].disconnectTime = Date.now();
+      
+      // Notify host
+      io.to(room.hostSocketID).emit('playerDisconnected', room.players);
+      console.log(`Player ${room.players[socket.id].playerNumber} disconnected from room ${roomCode}`);
+      break;
+    }
+  }
+}
+
+function playerRejoinRoom(socket, data) {
+  if (!rooms[data.roomCode]) return;
+  
+  const room = rooms[data.roomCode];
+  
+  // Find player by player number
+  let foundPlayer = null;
+  for (let playerId in room.players) {
+    if (room.players[playerId].playerNumber === data.playerNumber) {
+      foundPlayer = room.players[playerId];
+      break;
+    }
+  }
+  
+  if (foundPlayer) {
+    // Update socket ID and mark as connected
+    delete room.players[foundPlayer.socketId];
+    room.players[socket.id] = {
+      ...foundPlayer,
+      socketId: socket.id,
+      connected: true,
+      rejoinTime: Date.now()
+    };
+    
+    socket.join(data.roomCode);
+    
+    // Send current game state to rejoining player
+    socket.emit('rejoinAccepted', {
+      roomCode: data.roomCode,
+      playerNumber: foundPlayer.playerNumber,
+      currentRound: room.currentRound,
+      buzzerActive: room.buzzerActive,
+      currentRoundBuzzes: room.currentRoundBuzzes,
+      roundHistory: room.roundHistory
+    });
+    
+    // Notify host
+    io.to(room.hostSocketID).emit('playerRejoined', room.players);
+    
+    console.log(`Player ${data.playerNumber} rejoined room ${data.roomCode}`);
+  } else {
+    socket.emit('rejoinRejected', 'Player not found in room');
+  }
+}
+// Socket.io connection handler
+io.on('connection', (socket) => {
+  console.log('Socket ' + socket.id + ' connected');
+  
+  // Host events
+  socket.on('hostCreateRoom', () => hostCreateRoom(socket));
+  socket.on('hostStartRound', (data) => hostStartRound(socket, data));
+  socket.on('hostStopRound', (data) => hostStopRound(socket, data));
+  socket.on('hostLeftRoom', (data) => hostLeaveRoom(socket, data));
+  socket.on('hostResetsGame', (data) => hostResetGame(socket, data));
+  
+  // Player events
+  socket.on('playerJoinRoomRequest', (data) => playerJoinRoomRequest(socket, data));
+  socket.on('playerBuzz', (data) => playerBuzz(socket, data));
+  socket.on('playerLeavesRoom', (data) => playerLeaveRoom(socket, data));
+  socket.on('playerRejoinRoomRequest', (data) => playerRejoinRoom(socket, data));
+  
+  // Handle disconnection
+  socket.on('disconnect', () => handleDisconnect(socket));
 });
+
+// Start server
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+
+
+
+
