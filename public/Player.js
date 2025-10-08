@@ -2,11 +2,10 @@
 export class Player {
   constructor(socket, joinData) {
     this.socket = socket;
-    this.currentRoundNumber = 1;
+    this.currentRoundNumber = joinData?.currentRound || 1;
     this.roomCode = joinData?.roomCode || null;
     this.playerNumber = joinData?.playerNumber || null;
     this.buzzerEnabled = false;
-    this.countdownActive = false;
     
     // Switch to player screen
     document.getElementById("mainMenu").classList.add("hidden");
@@ -15,10 +14,11 @@ export class Player {
     // Get DOM elements
     this.playerNumberDisplay = document.getElementById('playerNumberDisplay');
     this.playerCurrentRoundDisplay = document.getElementById('playerCurrentRoundDisplay');
-    this.playerCountdown = document.getElementById('playerCountdown');
     this.buzzerButton = document.getElementById('buzzer');
     this.playerStatus = document.getElementById('playerStatus');
     this.playerBuzzerResults = document.getElementById('playerBuzzerResults');
+    this.yourResult = document.getElementById('yourResult');
+    this.winnerDisplayPlayer = document.getElementById('winnerDisplayPlayer');
 
     this.setUpDocumentListeners();
     this.setUpServerListeners();
@@ -28,16 +28,29 @@ export class Player {
       this.playerNumberDisplay.textContent = this.playerNumber;
     }
     this.playerCurrentRoundDisplay.textContent = this.currentRoundNumber;
-
   }
 
-  /////////////////////////////////
+  //------------------------------
   // sending events to server
-  /////////////////////////////////
+  //----------------------------
   setUpDocumentListeners() {
     this.buzzerButton?.addEventListener('click', () => {this.sendBuzz()});
-    window.addEventListener('beforeunload', () => {this.sendLeaveRoom();});
+    
+    // Handle page unload
+    window.addEventListener('beforeunload', () => {
+      this.sendLeaveRoom();
+    });
+    
+    // Handle page visibility change (mobile background)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.handleGoingBackground();
+      } else {
+        this.handleComingForeground();
+      }
+    });
   }
+
   sendBuzz() {
     if (!this.buzzerEnabled) return;
     
@@ -53,9 +66,11 @@ export class Player {
     // Disable buzzer immediately after pressing
     this.buzzerEnabled = false;
     this.buzzerButton.disabled = true;
-    this.playerStatus.textContent = 'Buzzed!';
     this.buzzerButton.textContent = 'BUZZED!';
+    this.buzzerButton.classList.add('buzzed');
+    this.playerStatus.textContent = 'Buzzed! Waiting for results...';
   }
+
 
   sendLeaveRoom() {
     const data = {
@@ -70,13 +85,23 @@ export class Player {
   // received events from server
   ///////////////////////////////
   setUpServerListeners() {
-    this.socket.on("hostStartedCountdown", (data) => this.receivedCountdownStarted(data));
-    this.socket.on("hostStoppedCountdown", () => this.receivedCountdownStopped());
+    // Round control events
+    this.socket.on("hostStartedRound", (data) => this.receivedRoundStarted(data));
+    this.socket.on("hostStoppedRound", () => this.receivedRoundStopped());
 
+    // Results events
     this.socket.on("buzzerResults", (results) => this.receivedBuzzerResults(results));
 
-    this.socket.on("disconnect", () => { this.disconect()});
-    this.socket.on("reconnect", () => { this.reconnect()});
+    // Game state events
+    this.socket.on("gameReset", () => this.receivedGameReset());
+    this.socket.on("rejoinAccepted", (data) => this.receivedRejoinAccepted(data));
+    this.socket.on("rejoinRejected", (reason) => this.receivedRejoinRejected(reason));
+    
+
+    // Connection events
+    this.socket.on("disconnect", () => this.handleDisconnect());
+    this.socket.on("reconnect", () => this.handleReconnect());
+    this.socket.on("hostDisconnected", () => this.handleHostDisconnected());
   }
 
   disconect() {
@@ -92,15 +117,47 @@ export class Player {
   }
 
   
-  receivedCountdownStarted(data) {
-    this.countdownActive = true;
+  receivedRoundStarted(data) {
+    this.roundActive = true;
     this.currentRoundNumber = data.currentRound || this.currentRoundNumber;
     this.playerCurrentRoundDisplay.textContent = this.currentRoundNumber;
     
-    const countdownTime = data.countdownTime || 0;
+    const roundTime = data.roundTime || 0;
     
-    if (countdownTime > 0) {
-      this.startCountdownDisplay(countdownTime);
+    if (roundTime > 0) {
+      // Clear any existing timer
+      if (this.roundTimer) {
+        clearInterval(this.roundTimer);
+      }
+      
+      // Show round
+      this.playerRound.classList.remove('hidden');
+      this.playerStatus.textContent = 'Get ready...';
+      this.buzzerButton.textContent = 'WAIT...';
+      this.buzzerButton.disabled = true;
+      this.buzzerEnabled = false;
+      
+      let timeLeft = seconds;
+      this.roundNumber.textContent = timeLeft;
+      
+      this.roundTimer = setInterval(() => {
+        timeLeft--;
+        
+        if (timeLeft > 0) {
+          this.roundNumber.textContent = timeLeft;
+        } else if (timeLeft === 0) {
+          this.roundNumber.textContent = 'GO!';
+          setTimeout(() => {
+            this.playerRound.classList.add('hidden');
+            this.buzzerEnabled = true;
+            this.buzzerButton.disabled = false;
+            this.buzzerButton.textContent = 'BUZZ!';
+            this.buzzerButton.classList.remove('buzzed');
+            this.playerStatus.textContent = 'BUZZ when ready!';
+          }, 500);
+          clearInterval(this.roundTimer);
+        }
+      }, 1000);
     } else {
       this.buzzerEnabled = true;
       this.buzzerButton.disabled = false;
@@ -109,29 +166,165 @@ export class Player {
     }
   }
 
-  receivedCountdownStopped() {
-    this.countdownActive = false;
+  receivedRoundStopped() {
+    this.roundActive = false;
     this.buzzerEnabled = false;
     this.buzzerButton.disabled = true;
-    this.buzzerButton.textContent = 'BUZZ!';
+    
+    // Clear round timer if running
+    if (this.roundTimer) {
+      clearInterval(this.roundTimer);
+      this.roundTimer = null;
+    }
+    
+    // Only reset button text if not already buzzed
+    if (!this.buzzerButton.classList.contains('buzzed')) {
+      this.buzzerButton.textContent = 'BUZZ!';
+    }
+    
     this.playerStatus.textContent = 'Round ended';
-    this.playerCountdown.classList.add('hidden');
+    this.playerRound.classList.add('hidden');
   }
+
 
   receivedBuzzerResults(results) {
     // Clear previous results
     this.playerBuzzerResults.innerHTML = '';
+    this.yourResult.classList.add('hidden');
+    
+    if (!results || results.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'No buzzes yet';
+      this.playerBuzzerResults.appendChild(li);
+      return;
+    }
     
     // Display buzzer results
     results.forEach((result, index) => {
       const li = document.createElement('li');
-      li.textContent = `${index + 1}. Player ${result.playerNumber} - ${result.time}ms`;
+      const position = index + 1;
+      const timeDisplay = result.time === 0 ? 'First!' : `+${result.time}ms`;
+      
+      li.textContent = `${position}. Player ${result.playerNumber} - ${timeDisplay}`;
+      
       if (result.playerNumber === this.playerNumber) {
         li.classList.add('your-result');
+        
+        // Show special message for your result
+        this.yourResult.classList.remove('hidden');
+        if (position === 1) {
+          this.yourResult.textContent = '🏆 You were first!';
+          this.yourResult.style.color = '#FFD700';
+        } else if (position === 2) {
+          this.yourResult.textContent = '🥈 Second place!';
+          this.yourResult.style.color = '#C0C0C0';
+        } else if (position === 3) {
+          this.yourResult.textContent = '🥉 Third place!';
+          this.yourResult.style.color = '#CD7F32';
+        } else {
+          this.yourResult.textContent = `You placed #${position}`;
+          this.yourResult.style.color = '#4CAF50';
+        }
       }
+      
       this.playerBuzzerResults.appendChild(li);
     });
   }
 
+  
+  receivedGameReset() {
+    this.currentRoundNumber = 1;
+    this.playerCurrentRoundDisplay.textContent = this.currentRoundNumber;
+    this.buzzerEnabled = false;
+    this.buzzerButton.disabled = true;
+    this.buzzerButton.textContent = 'BUZZ!';
+    this.buzzerButton.classList.remove('buzzed');
+    this.playerStatus.textContent = 'Game reset - waiting for host...';
+    this.playerBuzzerResults.innerHTML = '';
+    this.yourResult.classList.add('hidden');
+  }
 
+  receivedRejoinAccepted(data) {
+    this.currentRoundNumber = data.currentRound;
+    this.playerCurrentRoundDisplay.textContent = this.currentRoundNumber;
+    this.playerStatus.textContent = 'Reconnected successfully!';
+    
+    // Update buzzer state based on whether round is active
+    if (data.buzzerActive) {
+        this.buzzerEnabled = true;
+        this.buzzerButton.disabled = false;
+        this.buzzerButton.textContent = 'BUZZ!';
+        this.buzzerButton.classList.remove('buzzed');
+        this.playerStatus.textContent = 'BUZZ when ready!';
+    } else {
+      this.buzzerButton.disabled = true;
+      this.playerStatus.textContent = 'Waiting for host to start...';
+    }
+    
+    // Show current round results if any
+    if (data.currentRoundBuzzes && data.currentRoundBuzzes.length > 0) {
+      this.receivedBuzzerResults(data.currentRoundBuzzes);
+    }
+  }
+
+
+
+  receivedRejoinRejected(reason) {
+    this.playerStatus.textContent = `Failed to rejoin: ${reason}`;
+    this.playerStatus.style.color = '#f44336';
+  }
+
+
+  handleDisconnect() {
+    this.playerStatus.textContent = 'Disconnected from server';
+    this.playerStatus.style.color = '#f44336';
+    this.buzzerEnabled = false;
+    this.buzzerButton.disabled = true;
+    
+    // Clear any running timers
+    if (this.roundTimer) {
+      clearInterval(this.roundTimer);
+      this.roundTimer = null;
+    }
+  }
+
+  handleReconnect() {
+    this.playerStatus.textContent = 'Reconnected! Syncing...';
+    this.playerStatus.style.color = '#4CAF50';
+    
+    // Attempt to rejoin the room
+    const data = {
+      roomCode: this.roomCode,
+      playerNumber: this.playerNumber
+    };
+    
+    this.socket.emit('playerRejoinRoomRequest', data);
+  }
+
+  handleHostDisconnected() {
+    this.playerStatus.textContent = 'Host disconnected - room closed';
+    this.playerStatus.style.color = '#f44336';
+    this.buzzerEnabled = false;
+    this.buzzerButton.disabled = true;
+    
+    // Show return to menu button after delay
+    setTimeout(() => {
+      if (confirm('The host has disconnected. Return to main menu?')) {
+        location.reload();
+      }
+    }, 2000);
+  }
+
+  handleGoingBackground() {
+    // Handle when app goes to background (mobile)
+    console.log('App went to background');
+  }
+
+  handleComingForeground() {
+    // Handle when app comes back to foreground
+    console.log('App came to foreground');
+    if (this.socket.disconnected) {
+      this.socket.connect();
+    }
+  }
 }

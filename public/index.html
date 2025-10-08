@@ -36,7 +36,7 @@
       
     <div class="control-panel">
         <button id="hostStartRoundButton">Start Round</button>
-        <button id="hostEndRoundButton" disabled>End Round</button>
+        <button id="hostStopRoundButton" disabled>End Round</button>
     </div>
       
     <div>
@@ -71,15 +71,15 @@
   <div id="playerScreen" class="section hidden">
     <h2>Player Number: <span id="playerNumberDisplay"></span></h2>
     <div class="player-info"></div>
-    <div class="round-info">Round: <span id="PlayerCurrentRoundDisplay">1</span></div>
+    <div class="round-info">Round: <span id="playerCurrentRoundDisplay">1</span></div>
     
-    <div id="PlayerRound" class="round-container hidden">
+    <div id="playerRound" class="round-container hidden">
       <div class="round">5</div>
       <div>Get ready!</div>
     </div>
     
     <button id="buzzer" disabled>BUZZ!</button>
-    <div id="PlayerStatus">Waiting for host to start...</div>
+    <div id="playerStatus">Waiting for host to start...</div>
     
     <div id="yourResult" class="your-result hidden"></div>
     
@@ -87,27 +87,27 @@
     
     <div class="tab-container">
 
-      <div id="PlayerCurrentRoundTab" class="tab-content active">
+      <div id="playerCurrentRoundTab" class="tab-content active">
         <h3>Current Buzzer Results:</h3>
         <ul id="PlayerBuzzerResults"></ul>
       </div>
       
-      <div id="PlayerScoreboardTab" class="tab-content">
+      <div id="playerScoreboardTab" class="tab-content">
         <h3>Player Scores:</h3>
-        <table id="PlayerScoreboardTable" class="scoreboard">
+        <table id="playerScoreboardTable" class="scoreboard">
           <thead>
             <tr>
               <th>Name</th>
               <th>Score</th>
             </tr>
           </thead>
-          <tbody id="PlayerScoreboardBody"></tbody>
+          <tbody id="playerScoreboardBody"></tbody>
         </table>
       </div>
       
-      <div id="PlayerRoundHistoryTab" class="tab-content">
+        <div id="playerRoundHistoryTab" class="tab-content">
         <h3>Previous Rounds:</h3>
-        <div id="PlayerRoundHistoryList" class="round-history"></div>
+        <div id="playerRoundHistoryList" class="round-history"></div>
       </div>
     </div>
   </div>

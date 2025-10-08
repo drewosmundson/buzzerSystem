@@ -15,7 +15,7 @@ export class Host {
 
     // elements whose updates are sent to the server
     this.hostStartRoundButton = document.getElementById('hostStartRoundButton');
-    this.hostEndRoundButton = document.getElementById('hostEndRoundButton');
+    this.hostStopRoundButton = document.getElementById('hostStopRoundButton');
 
     this.setUpDocumentListeners();
     this.setUpServerListeners();
@@ -29,7 +29,7 @@ export class Host {
   /////////////////////////////////
   setUpDocumentListeners() {
     this.hostStartRoundButton?.addEventListener('click', () => {this.sendStartRound()});
-    this.hostEndRoundButton?.addEventListener('click', () => {this.sendEndRound()});
+    this.hostStopRoundButton?.addEventListener('click', () => {this.sendStopRound()});
     this.resetGameButton?.addEventListener('click', () => this.sendResetGame());
   }
 
@@ -48,10 +48,10 @@ export class Host {
     this.socket.emit('hostStartRound', data );
 
     this.hostStartRoundButton.disabled = true;
-    this.hostEndRoundButton.disabled = false;
+    this.hostStopRoundButton.disabled = false;
   }
 
-  sendEndRound() {
+  sendStopRound() {
     const data = { 
       currentRound: this.currentRoundNumber,
       roomCode: this.roomCode
@@ -59,7 +59,7 @@ export class Host {
 
     this.socket.emit('hostStopRound', data );
 
-    this.hostEndRoundButton.disabled = true;
+    this.hostStopRoundButton.disabled = true;
     this.hostStartRoundButton.disabled = false;
   }
 
@@ -83,6 +83,7 @@ export class Host {
   setUpServerListeners() {
     this.socket.on("roomCreated", (data) => this.receivedRoomCreated(data));
     this.socket.on("playerJoined", (newPlayerList) => this.receivedPlayerJoined(newPlayerList));
+    this.socket.on("hostStoppedRound", roundResults => this.receivedStoppedRound(roundResults));
   }
 
   receivedRoomCreated(data) {
