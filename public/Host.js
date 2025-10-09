@@ -99,6 +99,6 @@ export class Host {
   receivedStoppedRound(roundResults) {
     // Display round results
     console.log('Round stopped. Results:', roundResults);
-    // TODO: Implement UI update to display round history
+    // implement UI update to display round history
   }
 }
