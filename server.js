@@ -56,13 +56,13 @@ function generateRoomCode() {
     randomNumber = Math.floor(Math.random() * roomCodeOptions.length);
     roomCode += roomCodeOptions[randomNumber];
     if(!rooms[roomCode]) { // if a new code is found that is not in rooms scramble it
-      roomCode.split('') // Convert string to an array of characters
+      roomCode = roomCode.split('') // Convert string to an array of characters
       .sort(() => Math.random() - 0.5) // Randomly sort the characters
       .join(''); // Join the characters back into a string 
     }
     // infinite loop insurance
     iter += 1;
-    if(iter < 10){
+    if(iter > 10){
       return null;
     }
   }
@@ -359,7 +359,7 @@ io.on('connection', (socket) => {
   // Host events
   socket.on('hostCreateRoom', () => hostCreateRoom(socket));
   socket.on('hostStartRound', (data) => hostStartRound(socket, data));
-  socket.on('hostStopRound', (data) => hostStopRound(socket, data));
+  socket.on('hostStopRound', (data) => hostStopRound(io, data));
   socket.on('hostLeftRoom', (data) => hostLeaveRoom(socket, data));
   socket.on('hostResetsGame', (data) => hostResetGame(socket, data));
   
@@ -377,7 +377,3 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
-
-
-
-

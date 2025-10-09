@@ -1,4 +1,3 @@
-
 export class Player {
   constructor(socket, joinData) {
     this.socket = socket;
@@ -16,9 +15,10 @@ export class Player {
     this.playerCurrentRoundDisplay = document.getElementById('playerCurrentRoundDisplay');
     this.buzzerButton = document.getElementById('buzzer');
     this.playerStatus = document.getElementById('playerStatus');
-    this.playerBuzzerResults = document.getElementById('playerBuzzerResults');
+    this.playerBuzzerResults = document.getElementById('PlayerBuzzerResults');
     this.yourResult = document.getElementById('yourResult');
     this.winnerDisplayPlayer = document.getElementById('winnerDisplayPlayer');
+    this.playerRound = document.getElementById('playerRound');
 
     this.setUpDocumentListeners();
     this.setUpServerListeners();
@@ -104,7 +104,7 @@ export class Player {
     this.socket.on("hostDisconnected", () => this.handleHostDisconnected());
   }
 
-  disconect() {
+  disconnect() {
     this.playerStatus.textContent = 'Disconnected from server';
     this.buzzerEnabled = false;
     this.buzzerButton.disabled = true;
@@ -124,29 +124,32 @@ export class Player {
     
     const roundTime = data.roundTime || 0;
     
-    if (roundTime > 0) {
+    if (roundTime > 0 && this.playerRound) {
       // Clear any existing timer
       if (this.roundTimer) {
         clearInterval(this.roundTimer);
       }
       
-      // Show round
+      // Show round countdown
       this.playerRound.classList.remove('hidden');
       this.playerStatus.textContent = 'Get ready...';
       this.buzzerButton.textContent = 'WAIT...';
       this.buzzerButton.disabled = true;
       this.buzzerEnabled = false;
       
-      let timeLeft = seconds;
-      this.roundNumber.textContent = timeLeft;
+      let timeLeft = roundTime;
+      const roundNumberElement = this.playerRound.querySelector('.round');
+      if (roundNumberElement) {
+        roundNumberElement.textContent = timeLeft;
+      }
       
       this.roundTimer = setInterval(() => {
         timeLeft--;
         
-        if (timeLeft > 0) {
-          this.roundNumber.textContent = timeLeft;
-        } else if (timeLeft === 0) {
-          this.roundNumber.textContent = 'GO!';
+        if (timeLeft > 0 && roundNumberElement) {
+          roundNumberElement.textContent = timeLeft;
+        } else if (timeLeft === 0 && roundNumberElement) {
+          roundNumberElement.textContent = 'GO!';
           setTimeout(() => {
             this.playerRound.classList.add('hidden');
             this.buzzerEnabled = true;
@@ -159,9 +162,11 @@ export class Player {
         }
       }, 1000);
     } else {
+      // No countdown - enable buzzer immediately
       this.buzzerEnabled = true;
       this.buzzerButton.disabled = false;
       this.buzzerButton.textContent = 'BUZZ!';
+      this.buzzerButton.classList.remove('buzzed');
       this.playerStatus.textContent = 'BUZZ when ready!';
     }
   }
@@ -183,7 +188,9 @@ export class Player {
     }
     
     this.playerStatus.textContent = 'Round ended';
-    this.playerRound.classList.add('hidden');
+    if (this.playerRound) {
+      this.playerRound.classList.add('hidden');
+    }
   }
 
 
@@ -213,13 +220,13 @@ export class Player {
         // Show special message for your result
         this.yourResult.classList.remove('hidden');
         if (position === 1) {
-          this.yourResult.textContent = '🏆 You were first!';
+          this.yourResult.textContent = 'First place!';
           this.yourResult.style.color = '#FFD700';
         } else if (position === 2) {
-          this.yourResult.textContent = '🥈 Second place!';
+          this.yourResult.textContent = 'Second place';
           this.yourResult.style.color = '#C0C0C0';
         } else if (position === 3) {
-          this.yourResult.textContent = '🥉 Third place!';
+          this.yourResult.textContent = 'Third place';
           this.yourResult.style.color = '#CD7F32';
         } else {
           this.yourResult.textContent = `You placed #${position}`;

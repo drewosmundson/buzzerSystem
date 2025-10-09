@@ -16,6 +16,7 @@ export class Host {
     // elements whose updates are sent to the server
     this.hostStartRoundButton = document.getElementById('hostStartRoundButton');
     this.hostStopRoundButton = document.getElementById('hostStopRoundButton');
+    this.resetGameButton = document.getElementById('resetGameButton');
 
     this.setUpDocumentListeners();
     this.setUpServerListeners();
@@ -93,5 +94,11 @@ export class Host {
 
   receivedPlayerJoined(newPlayerList) {
     // display players later
+  }
+
+  receivedStoppedRound(roundResults) {
+    // Display round results
+    console.log('Round stopped. Results:', roundResults);
+    // TODO: Implement UI update to display round history
   }
 }
