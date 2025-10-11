@@ -101,4 +101,42 @@ export class Host {
     console.log('Round stopped. Results:', roundResults);
     // implement UI update to display round history
   }
+  receivedBuzzerResults(results) {
+    if (!this.buzzerResults) return;
+    
+    // Clear previous results
+    this.buzzerResults.innerHTML = '';
+    
+    if (!results || results.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'No buzzes yet';
+      li.style.fontStyle = 'italic';
+      li.style.color = '#600';
+      this.buzzerResults.appendChild(li);
+      return;
+    }
+    
+    // Display buzz results in order
+    results.forEach((result, index) => {
+      const li = document.createElement('li');
+      li.className = 'buzz-result';
+      
+      const position = index + 1;
+      const timeDisplay = result.time === 0 ? 'First!' : `+${result.time}ms`;
+      
+      // Create the result text with styling
+      li.innerHTML = `
+        <span class="position">${position}.</span>
+        <span class="player">Player ${result.playerNumber}</span>
+        <span class="time">${timeDisplay}</span>
+      `;
+      
+      // Add special styling for first place
+      if (position === 1) {
+        li.classList.add('first-place');
+      }
+      
+      this.buzzerResults.appendChild(li);
+    });
+  }
 }
