@@ -274,13 +274,10 @@ export class Player {
     }
   }
 
-
-
   receivedRejoinRejected(reason) {
     this.playerStatus.textContent = `Failed to rejoin: ${reason}`;
     this.playerStatus.style.color = '#f44336';
   }
-
 
   handleDisconnect() {
     this.playerStatus.textContent = 'Disconnected from server';

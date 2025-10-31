@@ -17,7 +17,8 @@ export class Host {
     this.hostStartRoundButton = document.getElementById('hostStartRoundButton');
     this.hostStopRoundButton = document.getElementById('hostStopRoundButton');
     this.resetGameButton = document.getElementById('resetGameButton');
-
+    this.buzzerResults = document.getElementById('buzzerResults');
+    
     this.setUpDocumentListeners();
     this.setUpServerListeners();
 
