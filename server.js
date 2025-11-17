@@ -14,6 +14,10 @@ import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import HostServer from './serverEvents/HostServer';
+import PlayerServer from './serverEventsPlayerHost';
+
+
 // __dirname replacement in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +30,7 @@ const io = new Server(server);
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Constants
 const ROOMCODELENGTH = 4;
 const PORT = process.env.PORT || 3000;
 
@@ -37,7 +42,7 @@ const rooms = {};
 // -----------------------
 // SERVER HELPER FUNCTIONS
 //------------------------
-// notebly missing 6 and to avoid meme "funny" numbers that would 
+// notebly missing 6 and to avoid meme numbers that would 
 // disrupt a classroom i.e. '6,7' and '69'
 function generateRoomCode() {
   const roomCodeOptions = "12345789";
@@ -49,10 +54,9 @@ function generateRoomCode() {
   }
 
   // Make sure room code doesn't already exist creating a longer number then scrambling
-  // this ensurs the server is less prone to stalling while keeping functionality of providing a 
-  // unique code for each room vs previous version
+  // this ensurs the server is unique and secure
   let iter = 0;
-  while(rooms[roomCode]) {
+  while(rooms[roomCode]) { // true until a unique code is found
     randomNumber = Math.floor(Math.random() * roomCodeOptions.length);
     roomCode += roomCodeOptions[randomNumber];
     if(!rooms[roomCode]) { // if a new code is found that is not in rooms scramble it
@@ -353,11 +357,15 @@ function playerRejoinRoom(socket, data) {
   }
 }
 // Socket.io connection handler
+const hostServer = new HostServer();
+const playerServer = new PlayerServer();
+
 io.on('connection', (socket) => {
   console.log('Socket ' + socket.id + ' connected');
   
   // Host events
   socket.on('hostCreateRoom', () => hostCreateRoom(socket));
+
   socket.on('hostStartRound', (data) => hostStartRound(socket, data));
   socket.on('hostStopRound', (data) => hostStopRound(io, data));
   socket.on('hostLeftRoom', (data) => hostLeaveRoom(socket, data));
